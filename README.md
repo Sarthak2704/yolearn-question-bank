@@ -1,6 +1,11 @@
 # YoLearn.ai — Question Bank Management System
 
-A production-ready, scalable, AI-powered Question Bank Management System designed as the central single source of truth for educational questions across the Indian ecosystem, including:
+[![CI Build & Test](https://github.com/Sarthak2704/yolearn-question-bank/actions/workflows/ci.yml/badge.svg)](https://github.com/Sarthak2704/yolearn-question-bank/actions)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSarthak2704%2Fyolearn-question-bank)
+
+🔗 **GitHub Repository**: [https://github.com/Sarthak2704/yolearn-question-bank](https://github.com/Sarthak2704/yolearn-question-bank)
+
+A production-ready, scalable, AI-powered Question Bank Management System designed as the central single source of truth for educational questions across the Indian ecosystem:
 - **K-12 Schooling** (Classes 1–12, CBSE, ICSE, State Boards, NCERT)
 - **Competitive Examinations** (JEE Main, JEE Advanced, NEET-UG, CUET, and others)
 
