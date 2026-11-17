@@ -1,0 +1,336 @@
+// Prisma schema for YoLearn Question Bank Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Question {
+  id                    String      @id @default(uuid())
+  code                  String      @unique // e.g. QB-CH-000001
+  type                  String      // MCQ, MSQ, TRUE_FALSE, NUMERICAL, MATCH_THE_FOLLOWING, etc.
+  subtype               String?
+  difficulty            String      @default("MEDIUM") // VERY_EASY, EASY, MEDIUM, HARD, VERY_HARD
+  cognitiveLevel        String      @default("UNDERSTAND") // REMEMBER, UNDERSTAND, APPLY, ANALYSE, EVALUATE, CREATE
+  questionNature        String      @default("CONCEPTUAL") // CONCEPTUAL, NUMERICAL, THEORETICAL, LOGICAL, etc.
+  questionStyle         String      @default("DIRECT") // DIRECT, TRICKY, MULTI_CONCEPT, NCERT_LINE_BASED, HOTS, etc.
+  positiveMarks         Float       @default(4.0)
+  negativeMarks         Float       @default(-1.0)
+  estimatedTimeSeconds  Int         @default(120)
+  language              String      @default("English")
+  verificationStatus    String      @default("PENDING_REVIEW") // DRAFT, PROCESSING, PENDING_REVIEW, CHANGES_REQUESTED, APPROVED, PUBLISHED, REJECTED, ARCHIVED
+  publishingStatus      String      @default("UNPUBLISHED") // UNPUBLISHED, PUBLISHED, SCHEDULED, ARCHIVED
+  
+  // Content & Rich components (stored as structured JSON)
+  contentJson           String      // { statement: "...", passage?: "...", instructions?: "...", rubric?: "..." }
+  statementText         String      // Clean text for search & similarity
+  optionsJson           String?     // Array of options: [{ id: "A", text: "...", isCorrect: true, explanation: "..." }]
+  answerJson            String?     // Answer structure depending on type: { correctOptions: ["A"], numericValue: 42.5, tolerance: 0.1, pairs: [...] }
+  solutionJson          String?     // { stepByStep: "...", finalAnswer: "...", videoUrl?: "..." }
+  mediaJson             String?     // Array of media attachments: [{ type: "IMAGE", url: "...", caption: "..." }]
+  
+  // Deduplication hashes
+  contentHash           String?
+  normalisedText        String?
+  
+  // Source relation
+  sourceId              String?
+  source                QuestionSource? @relation(fields: [sourceId], references: [id])
+  
+  // Group relation (Passage/Case Study parent)
+  parentGroupId         String?
+  parentGroup           QuestionGroup?  @relation(fields: [parentGroupId], references: [id])
+  
+  // Taxonomy and Tag mappings
+  taxonomyMappings      QuestionTaxonomyMapping[]
+  tagMappings           QuestionTagMapping[]
+  
+  // Reviews & Versioning
+  reviews               QuestionReview[]
+  versions              QuestionVersion[]
+  
+  createdById           String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model QuestionSource {
+  id              String      @id @default(uuid())
+  sourceType      String      @default("PYQ") // PYQ, MANUAL, AI_GENERATED, NCERT, REFERENCE_BOOK, IMPORTED
+  sourceName      String      // e.g. "JEE Advanced 2024 Paper 1"
+  bookName        String?     // e.g. "HC Verma Concepts of Physics Vol 1"
+  author          String?
+  publisher       String?
+  examName        String?     // e.g. "JEE Advanced"
+  examYear        Int?        // e.g. 2024
+  examDate        String?     // e.g. "2024-05-26"
+  shift           String?     // e.g. "Morning Shift"
+  paperCode       String?     // e.g. "Paper 1 - Code 3"
+  questionNumber  String?     // e.g. "Q14"
+  pageNumber      String?
+  sourceUrl       String?
+  copyrightInfo   String?     // e.g. "Educational fair use / Public Domain PYQ"
+  
+  questions       Question[]
+  createdAt       DateTime    @default(now())
+}
+
+model QuestionGroup {
+  id              String      @id @default(uuid())
+  title           String      // e.g. "Comprehension Passage: Photoelectric Effect"
+  groupType       String      @default("PASSAGE") // PASSAGE, CASE_STUDY, COMPREHENSION, COMMON_DATA
+  instruction     String?
+  sharedPassage   String      // Rich text / LaTeX passage
+  sharedMediaJson String?     // Diagrams or tables shared across child questions
+  
+  questions       Question[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model EducationSegment {
+  id              String      @id @default(uuid())
+  name            String      // K-12, Competitive Exams, Higher Education
+  code            String      @unique
+  description     String?
+  sortOrder       Int         @default(0)
+  
+  boards          Board[]
+  exams           Exam[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Board {
+  id                  String      @id @default(uuid())
+  educationSegmentId  String
+  educationSegment    EducationSegment @relation(fields: [educationSegmentId], references: [id])
+  name                String      // CBSE, ICSE, Maharashtra State Board, etc.
+  code                String      @unique
+  
+  taxonomyMappings    QuestionTaxonomyMapping[]
+}
+
+model Exam {
+  id                  String      @id @default(uuid())
+  educationSegmentId  String
+  educationSegment    EducationSegment @relation(fields: [educationSegmentId], references: [id])
+  name                String      // JEE Main, JEE Advanced, NEET, CUET, NDA, etc.
+  code                String      @unique
+  
+  taxonomyMappings    QuestionTaxonomyMapping[]
+}
+
+model AcademicClass {
+  id              String      @id @default(uuid())
+  name            String      // Class 9, Class 10, Class 11, Class 12, Dropper/Target
+  code            String      @unique
+  sortOrder       Int         @default(0)
+  
+  chapters        Chapter[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Subject {
+  id              String      @id @default(uuid())
+  name            String      // Physics, Chemistry, Mathematics, Biology, English, etc.
+  code            String      @unique
+  icon            String?
+  
+  chapters        Chapter[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Chapter {
+  id              String      @id @default(uuid())
+  subjectId       String
+  subject         Subject     @relation(fields: [subjectId], references: [id])
+  classId         String?
+  class           AcademicClass? @relation(fields: [classId], references: [id])
+  name            String      // e.g. "Rotational Motion", "Electrochemistry"
+  chapterNumber   Int         @default(1)
+  
+  topics          Topic[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Topic {
+  id              String      @id @default(uuid())
+  chapterId       String
+  chapter         Chapter     @relation(fields: [chapterId], references: [id])
+  name            String      // e.g. "Moment of Inertia", "Torque"
+  sortOrder       Int         @default(0)
+  
+  subtopics       Subtopic[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Subtopic {
+  id              String      @id @default(uuid())
+  topicId         String
+  topic           Topic       @relation(fields: [topicId], references: [id])
+  name            String      // e.g. "Parallel Axis Theorem"
+  sortOrder       Int         @default(0)
+  
+  concepts        Concept[]
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model Concept {
+  id              String      @id @default(uuid())
+  subtopicId      String
+  subtopic        Subtopic    @relation(fields: [subtopicId], references: [id])
+  name            String      // e.g. "Perpendicular and Parallel Axes Application"
+  code            String?
+  
+  taxonomyMappings QuestionTaxonomyMapping[]
+}
+
+model QuestionTaxonomyMapping {
+  id                  String      @id @default(uuid())
+  questionId          String
+  question            Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  educationSegmentId  String?
+  educationSegment    EducationSegment? @relation(fields: [educationSegmentId], references: [id])
+  boardId             String?
+  board               Board?      @relation(fields: [boardId], references: [id])
+  examId              String?
+  exam                Exam?       @relation(fields: [examId], references: [id])
+  classId             String?
+  class               AcademicClass? @relation(fields: [classId], references: [id])
+  subjectId           String?
+  subject             Subject?    @relation(fields: [subjectId], references: [id])
+  chapterId           String?
+  chapter             Chapter?    @relation(fields: [chapterId], references: [id])
+  topicId             String?
+  topic               Topic?      @relation(fields: [topicId], references: [id])
+  subtopicId          String?
+  subtopic            Subtopic?   @relation(fields: [subtopicId], references: [id])
+  conceptId           String?
+  concept             Concept?    @relation(fields: [conceptId], references: [id])
+  
+  isPrimary           Boolean     @default(true)
+}
+
+model QuestionTag {
+  id              String      @id @default(uuid())
+  name            String      @unique // e.g. "Frequently Asked", "High Weightage", "HOTS"
+  color           String      @default("#4f46e5")
+  slug            String      @unique
+  
+  tagMappings     QuestionTagMapping[]
+}
+
+model QuestionTagMapping {
+  id              String      @id @default(uuid())
+  questionId      String
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tagId           String
+  tag             QuestionTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+}
+
+model QuestionReview {
+  id              String      @id @default(uuid())
+  questionId      String
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reviewerId      String?
+  reviewerName    String      // e.g. "Dr. R. Sharma (Physics SME)"
+  reviewerRole    String      // SME, CONTENT_MANAGER, REVIEWER, SUPER_ADMIN
+  action          String      // APPROVE, REJECT, REQUEST_CHANGES, COMMENT
+  comment         String?
+  checklistJson   String?     // { statementVerified: true, answerVerified: true, solutionVerified: true, latexVerified: true }
+  createdAt       DateTime    @default(now())
+}
+
+model QuestionVersion {
+  id                  String      @id @default(uuid())
+  questionId          String
+  question            Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  versionNumber       Int
+  contentSnapshotJson String      // Complete JSON dump of the question state at this version
+  changedBy           String      // Username or email
+  changeReason        String?
+  createdAt           DateTime    @default(now())
+}
+
+model QuestionDuplicate {
+  id                  String      @id @default(uuid())
+  originalQuestionId  String
+  duplicateQuestionId String
+  similarityScore     Float       // 0.0 to 1.0 (e.g. 0.96)
+  matchType           String      // EXACT, NORMALISED, SEMANTIC
+  status              String      @default("PENDING") // PENDING, RESOLVED_KEPT_BOTH, RESOLVED_MERGED, RESOLVED_MARKED_DUPLICATE
+  resolutionNotes     String?
+  createdAt           DateTime    @default(now())
+}
+
+model QuestionImportJob {
+  id                    String      @id @default(uuid())
+  fileName              String
+  fileType              String      // PDF, DOCX, XLSX, CSV
+  fileSize              Int         @default(0)
+  totalPages            Int         @default(1)
+  totalDetected         Int         @default(0)
+  successfullyExtracted Int         @default(0)
+  failedCount           Int         @default(0)
+  pendingReviewCount    Int         @default(0)
+  status                String      @default("UPLOADED") // UPLOADED, QUEUED, PROCESSING, EXTRACTION_COMPLETED, PARTIALLY_FAILED, FAILED, COMPLETED
+  errorSummary          String?
+  
+  items                 QuestionImportItem[]
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model QuestionImportItem {
+  id                String      @id @default(uuid())
+  jobId             String
+  job               QuestionImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  pageNumber        Int         @default(1)
+  itemIndex         Int         @default(1)
+  rawContent        String
+  extractedDataJson String?
+  status            String      @default("SUCCESS") // SUCCESS, WARNING, ERROR
+  errorMessage      String?
+  questionId        String?
+  createdAt         DateTime    @default(now())
+}
+
+model AiGenerationLog {
+  id                    String      @id @default(uuid())
+  provider              String      // gemini, open_ai, mock_ai
+  model                 String      // gemini-1.5-pro, etc.
+  promptVersion         String      @default("v1.0")
+  taskType              String      // EXTRACTION, TAGGING, GENERATION, VALIDATION
+  inputPrompt           String
+  outputResponse        String
+  confidenceScoresJson  String?     // e.g. { subject: 0.98, chapter: 0.95, difficulty: 0.85 }
+  executionTimeMs       Int         @default(0)
+  status                String      @default("SUCCESS") // SUCCESS, FAILED
+  createdAt             DateTime    @default(now())
+}
+
+model User {
+  id              String      @id @default(uuid())
+  name            String
+  email           String      @unique
+  role            String      @default("CONTENT_MANAGER") // SUPER_ADMIN, QB_MANAGER, CONTENT_MANAGER, SME, REVIEWER, VIEWER
+  avatarUrl       String?
+  createdAt       DateTime    @default(now())
+}
+
+model AuditLog {
+  id              String      @id @default(uuid())
+  userId          String?
+  userName        String?
+  action          String      // e.g. "QUESTION_CREATED", "QUESTION_APPROVED", "BULK_IMPORT"
+  entityType      String      // QUESTION, TAXONOMY, REVIEW, IMPORT_JOB
+  entityId        String?
+  detailsJson     String?
+  ipAddress       String?     @default("127.0.0.1")
+  createdAt       DateTime    @default(now())
+}
