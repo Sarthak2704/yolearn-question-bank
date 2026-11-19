@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   Video,
   ArrowLeft,
@@ -99,17 +98,13 @@ export default function ShortDetailPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">Loading YoShort detail...</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">Loading YoShort detail...</div>
     );
   }
 
   if (!short) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">YoShort not found.</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">YoShort not found.</div>
     );
   }
 
@@ -117,8 +112,7 @@ export default function ShortDetailPage() {
   const bookMapping = short.bookMappings?.[0];
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
@@ -339,6 +333,5 @@ export default function ShortDetailPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
   );
 }

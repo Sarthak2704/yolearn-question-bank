@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import MathRenderer from '@/components/math/MathRenderer';
 import {
   Network,
@@ -51,17 +50,13 @@ export default function TopicDiscoveryPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">Loading topic relationships...</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">Loading topic relationships...</div>
     );
   }
 
   if (!data || !data.topic) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">Topic not found.</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">Topic not found.</div>
     );
   }
 
@@ -69,8 +64,7 @@ export default function TopicDiscoveryPage() {
   const { books = [], questions = [], yoShorts = [] } = relatedContent;
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
         {/* Header Breadcrumbs */}
         <div className="flex items-center justify-between">
           <Link
@@ -337,6 +331,5 @@ export default function TopicDiscoveryPage() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

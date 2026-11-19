@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   BarChart3,
   TrendingUp,
@@ -45,20 +44,17 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-slate-500">Compiling cross-vertical CMS analytics...</span>
-        </div>
-      </AppLayout>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm font-medium text-slate-500">Compiling cross-vertical CMS analytics...</span>
+      </div>
     );
   }
 
   const { books = {}, questions = {}, shorts = {}, taxonomyHealth = {} } = data || {};
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
@@ -296,6 +292,5 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
   );
 }

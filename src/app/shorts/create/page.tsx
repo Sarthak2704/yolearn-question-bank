@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   Video,
   ArrowLeft,
@@ -118,8 +117,7 @@ export default function CreateShortPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="max-w-3xl mx-auto space-y-6 pb-12">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link
@@ -363,6 +361,5 @@ export default function CreateShortPage() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

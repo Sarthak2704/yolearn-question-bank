@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   UploadCloud,
   ArrowLeft,
@@ -164,8 +163,7 @@ export default function BookUploadPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
         {/* Back Link & Header */}
         <div className="flex items-center justify-between">
           <Link
@@ -590,6 +588,5 @@ export default function BookUploadPage() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

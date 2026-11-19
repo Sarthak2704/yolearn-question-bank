@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   Users2,
   ShieldCheck,
@@ -42,8 +41,7 @@ export default function UserRoleManagementPage() {
   ];
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="pb-4 border-b border-slate-200">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
@@ -175,6 +173,5 @@ export default function UserRoleManagementPage() {
         </div>
       </div>
     </div>
-  </AppLayout>
   );
 }

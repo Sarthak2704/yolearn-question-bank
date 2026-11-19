@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   Settings,
   Cpu,
@@ -28,8 +27,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
       {/* Toast */}
       {saved && (
         <div className="fixed bottom-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl flex items-center gap-2">
@@ -169,6 +167,5 @@ export default function SettingsPage() {
         </button>
       </form>
     </div>
-  </AppLayout>
   );
 }

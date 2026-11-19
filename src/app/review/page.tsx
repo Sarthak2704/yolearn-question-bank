@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   CheckSquare,
   Clock,
@@ -98,8 +97,7 @@ export default function ReviewApprovalPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -280,6 +278,5 @@ export default function ReviewApprovalPage() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   Network,
   Plus,
@@ -105,8 +104,7 @@ export default function TaxonomyManagementPage() {
   const currentChapter = chapters.find((c: any) => c.id === selectedChapter) || chapters[0];
 
   return (
-    <AppLayout>
-      <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
@@ -436,6 +434,5 @@ export default function TaxonomyManagementPage() {
         </div>
       )}
     </div>
-  </AppLayout>
   );
 }

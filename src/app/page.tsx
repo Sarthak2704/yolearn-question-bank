@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import {
   BookOpen,
   Database,
@@ -44,20 +43,17 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-slate-500">Loading Unified CMS metrics...</span>
-        </div>
-      </AppLayout>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm font-medium text-slate-500">Loading Unified CMS metrics...</span>
+      </div>
     );
   }
 
   const { books = {}, questions = {}, shorts = {}, taxonomyHealth = {} } = data || {};
 
   return (
-    <AppLayout>
-      <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -349,6 +345,5 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-    </AppLayout>
   );
 }

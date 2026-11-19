@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AppLayout from '@/components/layout/AppLayout';
 import MathRenderer from '@/components/math/MathRenderer';
 import {
   BookOpen,
@@ -139,17 +138,13 @@ export default function BookDetailPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">Loading structured book content...</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">Loading structured book content...</div>
     );
   }
 
   if (!book) {
     return (
-      <AppLayout>
-        <div className="p-12 text-center text-slate-400">Book not found.</div>
-      </AppLayout>
+      <div className="p-12 text-center text-slate-400">Book not found.</div>
     );
   }
 
@@ -168,8 +163,7 @@ export default function BookDetailPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-4 pb-12">
+    <div className="space-y-4 pb-12">
         {/* Top Breadcrumb & Actions Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
@@ -561,6 +555,5 @@ export default function BookDetailPage() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }
