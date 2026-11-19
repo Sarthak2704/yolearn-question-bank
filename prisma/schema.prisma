@@ -48,6 +48,7 @@ model Question {
   // Taxonomy and Tag mappings
   taxonomyMappings      QuestionTaxonomyMapping[]
   tagMappings           QuestionTagMapping[]
+  bookMappings          QuestionBookMapping[]
   
   // Reviews & Versioning
   reviews               QuestionReview[]
@@ -141,6 +142,8 @@ model Subject {
   icon            String?
   
   chapters        Chapter[]
+  books           Book[]
+  yoShorts        YoShort[]
   taxonomyMappings QuestionTaxonomyMapping[]
 }
 
@@ -165,6 +168,8 @@ model Topic {
   sortOrder       Int         @default(0)
   
   subtopics       Subtopic[]
+  bookTopics      BookTopic[]
+  yoShorts        YoShort[]
   taxonomyMappings QuestionTaxonomyMapping[]
 }
 
@@ -328,9 +333,185 @@ model AuditLog {
   userId          String?
   userName        String?
   action          String      // e.g. "QUESTION_CREATED", "QUESTION_APPROVED", "BULK_IMPORT"
-  entityType      String      // QUESTION, TAXONOMY, REVIEW, IMPORT_JOB
+  entityType      String      // QUESTION, TAXONOMY, REVIEW, IMPORT_JOB, BOOK, YOSHORT
   entityId        String?
   detailsJson     String?
   ipAddress       String?     @default("127.0.0.1")
   createdAt       DateTime    @default(now())
+}
+
+// -------------------------------------------------------------
+// MODULE: BOOKS MANAGEMENT & INGESTION
+// -------------------------------------------------------------
+
+model Book {
+  id                    String        @id @default(uuid())
+  code                  String        @unique // e.g. "lehs3", "keph1", "jesc1"
+  title                 String        // Display title (e.g. "Science Class 10")
+  subtitle              String?
+  curriculum            String        @default("CBSE") // CBSE, ICSE, NCERT, STATE_BOARD
+  grade                 Int           @default(10)     // 1 to 12
+  subjectId             String
+  subject               Subject       @relation(fields: [subjectId], references: [id])
+  publisher             String?       @default("NCERT")
+  academicYear          String?       @default("2024-2025")
+  edition               String?       @default("Revised Edition")
+  language              String        @default("English")
+  bookType              String        @default("TEXTBOOK") // TEXTBOOK, REFERENCE_BOOK, EXEMPLAR, LAB_MANUAL
+  isbn                  String?
+  coverUrl              String?
+  pdfUrl                String?       // Stored file reference
+  s3Path                String?       // Base S3 key prefix e.g. 'CBSE/Grade 9-10/History/1'
+  qdrantCollection      String?       // Qdrant vector index e.g. 'yolearn_books_cbse_10'
+  databaseTarget        String?       @default("primary")
+  chapterSplit          String?       // '1-3,4-7,8-12' (1-indexed inclusive page ranges)
+  rawChapterNames       String?       // Comma-separated or stored list of original chapter titles
+  status                String        @default("UPLOADED") // UPLOADED, PROCESSING, EXTRACTION_COMPLETED, PENDING_REVIEW, UNDER_REVIEW, CHANGES_REQUESTED, VERIFIED, APPROVED, PUBLISHED, FAILED
+  verificationLevel     String        @default("BOOK")     // BOOK, CHAPTER, TOPIC, PAGE, BLOCK
+  processingProgress    Int           @default(0)          // 0 to 100 percentage
+  currentStage          String?       @default("QUEUED")   // 14-stage pipeline tracker
+  totalPages            Int           @default(0)
+  totalChapters         Int           @default(0)
+  totalTopics           Int           @default(0)
+  
+  chapters              BookChapter[]
+  questionMappings      QuestionBookMapping[]
+  shortsMappings        YoShortBookMapping[]
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model BookChapter {
+  id                    String        @id @default(uuid())
+  bookId                String
+  book                  Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterNumber         Int           @default(1)
+  title                 String        // e.g. "Chemical Reactions and Equations"
+  pageStart             Int           @default(1)
+  pageEnd               Int           @default(20)
+  introduction          String?
+  status                String        @default("PENDING_REVIEW") // PENDING_REVIEW, VERIFIED, APPROVED, CHANGES_REQUESTED
+  extractionConfidence  Float         @default(0.95) // 0.0 to 1.0
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  
+  topics                BookTopic[]
+  pages                 BookPage[]
+  questionMappings      QuestionBookMapping[]
+  shortsMappings        YoShortBookMapping[]
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model BookTopic {
+  id                    String        @id @default(uuid())
+  chapterId             String
+  chapter               BookChapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  title                 String        // e.g. "Types of Chemical Reactions"
+  sortOrder             Int           @default(1)
+  pageReference         Int?
+  contentBlocksJson     String?       // Structured blocks: [{ id, type: 'TEXT'|'FORMULA'|'IMAGE'|'TABLE', content, confidence, page, isVerified }]
+  status                String        @default("PENDING_REVIEW") // PENDING_REVIEW, VERIFIED, APPROVED, CHANGES_REQUESTED
+  extractionConfidence  Float         @default(0.94)
+  
+  // Mapping to Central Academic Taxonomy
+  centralTopicId        String?
+  centralTopic          Topic?        @relation(fields: [centralTopicId], references: [id])
+  
+  questionMappings      QuestionBookMapping[]
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model BookPage {
+  id                    String        @id @default(uuid())
+  chapterId             String
+  chapter               BookChapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  pageNumber            Int           @default(1)
+  rawText               String?
+  extractedJson         String?       // Full extracted structured elements on this page
+  imageUrl              String?       // High-res preview image of original PDF page
+  confidence            Float         @default(0.92)
+  isVerified            Boolean       @default(false)
+  ocrStatus             String        @default("COMPLETED") // COMPLETED, RE_RUN_QUEUED, FAILED
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model QuestionBookMapping {
+  id                    String        @id @default(uuid())
+  questionId            String
+  question              Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  bookId                String
+  book                  Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterId             String?
+  chapter               BookChapter?  @relation(fields: [chapterId], references: [id])
+  bookTopicId           String?
+  bookTopic             BookTopic?    @relation(fields: [bookTopicId], references: [id])
+  pageNumber            Int?
+  isVerified            Boolean       @default(true)
+  
+  createdAt             DateTime      @default(now())
+}
+
+// -------------------------------------------------------------
+// MODULE: YOSHORTS VIDEO MANAGEMENT
+// -------------------------------------------------------------
+
+model YoShort {
+  id                    String        @id @default(uuid())
+  code                  String        @unique // e.g. "YS-CHM-001"
+  title                 String        // e.g. "Types of Chemical Reactions in 60 Seconds"
+  description           String?
+  transcript            String        // Full educational video script/transcript
+  videoUrl              String?       // Video stream URL / asset
+  thumbnailUrl          String?
+  durationSeconds       Int           @default(60)
+  language              String        @default("English")
+  curriculum            String?       @default("CBSE")
+  grade                 Int?          @default(10)
+  subjectId             String?
+  subject               Subject?      @relation(fields: [subjectId], references: [id])
+  
+  // Direct central taxonomy linkage
+  centralTopicId        String?
+  centralTopic          Topic?        @relation(fields: [centralTopicId], references: [id])
+  
+  generationStatus      String        @default("DRAFT") // DRAFT, GENERATING, GENERATED, FAILED
+  generationStage       String?       @default("READY") // SCRIPT_ANALYSIS, AUDIO_SYNTHESIS, VISUAL_CUES, RENDERING, READY
+  verificationStatus    String        @default("PENDING_REVIEW") // PENDING_REVIEW, CHANGES_REQUESTED, APPROVED, PUBLISHED, REJECTED
+  publishingStatus      String        @default("UNPUBLISHED") // UNPUBLISHED, PUBLISHED, ARCHIVED
+  source                String?       @default("YoLearn Studio")
+  
+  bookMappings          YoShortBookMapping[]
+  reviews               YoShortReview[]
+  
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model YoShortBookMapping {
+  id                    String        @id @default(uuid())
+  yoShortId             String
+  yoShort               YoShort       @relation(fields: [yoShortId], references: [id], onDelete: Cascade)
+  bookId                String
+  book                  Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterId             String?
+  chapter               BookChapter?  @relation(fields: [chapterId], references: [id])
+  
+  createdAt             DateTime      @default(now())
+}
+
+model YoShortReview {
+  id                    String        @id @default(uuid())
+  yoShortId             String
+  yoShort               YoShort       @relation(fields: [yoShortId], references: [id], onDelete: Cascade)
+  reviewerName          String
+  action                String        // APPROVE, REJECT, REQUEST_CHANGES, REGENERATE
+  comment               String?
+  createdAt             DateTime      @default(now())
 }

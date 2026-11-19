@@ -21,6 +21,7 @@ import {
   Monitor,
   Smartphone,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 import MathRenderer from '@/components/math/MathRenderer';
 
@@ -414,6 +415,34 @@ export default function QuestionDetailPage({ params }: { params: { id: string } 
                 </div>
               </div>
             </div>
+
+            {/* Book-to-Question Ingestion Linkage Card (Section 5.D) */}
+            {q.bookMappings && q.bookMappings.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                  <BookOpen className="w-4 h-4" />
+                  <span>Mapped Curriculum Book (NCERT / Board)</span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  {q.bookMappings.map((bm: any) => (
+                    <div key={bm.id} className="p-3 bg-emerald-50/60 rounded-lg border border-emerald-100">
+                      <span className="font-bold text-slate-900 block">{bm.book?.title}</span>
+                      <span className="text-slate-600 block mt-0.5">
+                        {bm.chapter?.title ? `Ch: ${bm.chapter.title}` : ''}{' '}
+                        {bm.pageNumber ? `(Page ${bm.pageNumber})` : ''}
+                      </span>
+                      <Link
+                        href={`/books/${bm.bookId}`}
+                        className="text-emerald-700 font-semibold hover:underline inline-flex items-center gap-1 mt-1.5"
+                      >
+                        <span>View Book PDF & Extracted Concepts</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Cognitive & Question Metadata */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">

@@ -235,7 +235,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. Create Initial Version Snapshot (Version 1)
+    // 5. Create Book-to-Question Mapping if provided (Unified Cross-Vertical Link)
+    if (body.bookId) {
+      await prisma.questionBookMapping.create({
+        data: {
+          questionId: question.id,
+          bookId: body.bookId,
+          chapterId: body.chapterId || undefined,
+          bookTopicId: body.bookTopicId || undefined,
+          pageNumber: parseInt(body.pageNumber, 10) || undefined,
+        },
+      });
+    }
+
+    // 6. Create Initial Version Snapshot (Version 1)
     await prisma.questionVersion.create({
       data: {
         questionId: question.id,

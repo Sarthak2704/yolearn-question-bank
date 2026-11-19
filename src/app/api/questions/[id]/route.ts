@@ -34,6 +34,13 @@ export async function GET(
         reviews: {
           orderBy: { createdAt: 'desc' },
         },
+        bookMappings: {
+          include: {
+            book: true,
+            chapter: true,
+            bookTopic: true,
+          },
+        },
       },
     });
 

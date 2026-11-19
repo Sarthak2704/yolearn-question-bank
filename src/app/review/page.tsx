@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AppLayout from '@/components/layout/AppLayout';
 import {
   CheckSquare,
   Clock,
@@ -13,177 +14,272 @@ import {
   Layers,
   ChevronRight,
   ShieldCheck,
+  BookOpen,
+  Database,
+  Video,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
-import MathRenderer from '@/components/math/MathRenderer';
+
+interface QueueItem {
+  id: string;
+  contentType: 'BOOK' | 'QUESTION' | 'YOSHORT';
+  title: string;
+  subtitle: string;
+  status: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  assignedReviewer: string;
+  submittedAt: string;
+  actionUrl: string;
+  pendingAction: string;
+  metadata?: any;
+}
 
 export default function ReviewApprovalPage() {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [counts, setCounts] = useState({ total: 0, books: 0, questions: 0, shorts: 0 });
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('PENDING_REVIEW');
+  const [contentTypeFilter, setContentTypeFilter] = useState<'ALL' | 'BOOK' | 'QUESTION' | 'YOSHORT'>('ALL');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const fetchReviewQueue = () => {
+  const fetchQueue = async () => {
     setLoading(true);
-    fetch(`/api/reviews?status=${activeFilter}`)
-      .then((res) => res.json())
-      .then((d) => {
-        setQuestions(d.questions || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+    try {
+      const res = await fetch(`/api/review/unified?contentType=${contentTypeFilter}&status=PENDING`);
+      const data = await res.json();
+      if (data.success) {
+        setQueue(data.queue || []);
+        if (data.counts) setCounts(data.counts);
+      }
+    } catch (err) {
+      console.error('Failed to load review queue:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchReviewQueue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter]);
+    fetchQueue();
+  }, [contentTypeFilter]);
 
-  const handleQuickDecision = async (questionId: string, action: 'APPROVE' | 'REJECT') => {
+  const handleQuickApprove = async (item: QueueItem) => {
     try {
-      const res = await fetch(`/api/reviews/${questionId}/action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          comment: `Quick ${action.toLowerCase()} by reviewer in Review Queue`,
-          reviewerName: 'Dr. Rajesh Verma (Physics SME)',
-          reviewerRole: 'SME',
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionSuccess(`Question successfully ${action.toLowerCase()}d.`);
-        setTimeout(() => setActionSuccess(null), 3000);
-        fetchReviewQueue();
+      if (item.contentType === 'QUESTION') {
+        await fetch(`/api/reviews/${item.id}/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'APPROVE',
+            comment: 'Quick approved in Unified Review Queue',
+            reviewerName: 'Dr. Priya Sharma (SME)',
+            reviewerRole: 'SME',
+          }),
+        });
+      } else if (item.contentType === 'BOOK') {
+        await fetch(`/api/books/${item.id}/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ level: 'BOOK', status: 'VERIFIED' }),
+        });
+      } else if (item.contentType === 'YOSHORT') {
+        await fetch(`/api/shorts/${item.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'APPROVE' }),
+        });
       }
-    } catch (err) {
-      console.error(err);
+
+      setActionSuccess(`${item.contentType} successfully approved.`);
+      setTimeout(() => setActionSuccess(null), 3000);
+      fetchQueue();
+    } catch (e) {
+      console.error('Approve failed:', e);
     }
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Toast */}
-      {actionSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{actionSuccess}</span>
-        </div>
-      )}
+    <AppLayout>
+      <div className="space-y-6 pb-12">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-1">
+              <CheckSquare className="w-4 h-4" />
+              <span>Unified Review Queue (Section 8)</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Content Review & Verification Queue
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              One centralized review dashboard across physical books, question bank items, and educational short videos.
+            </p>
+          </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-indigo-600" />
-            <span>Content Review & Verification Workflow</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Subject Matter Experts and Reviewers verify answers, LaTeX equations, and academic mapping.
-          </p>
-        </div>
-      </div>
-
-      {/* Status Filter Pills */}
-      <div className="flex flex-wrap gap-2 text-xs font-semibold">
-        {[
-          { id: 'PENDING_REVIEW', label: 'Pending Review', color: 'bg-amber-50 text-amber-700' },
-          { id: 'CHANGES_REQUESTED', label: 'Changes Requested', color: 'bg-rose-50 text-rose-700' },
-          { id: 'APPROVED', label: 'Approved Questions', color: 'bg-emerald-50 text-emerald-700' },
-          { id: 'DRAFT', label: 'Ingestion Drafts', color: 'bg-slate-100 text-slate-700' },
-          { id: 'ALL', label: 'All Items', color: 'bg-indigo-50 text-indigo-700' },
-        ].map((tab) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            className={`px-3.5 py-2 rounded-lg border transition-all ${
-              activeFilter === tab.id
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+            onClick={fetchQueue}
+            className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors self-start sm:self-auto"
+            title="Refresh Queue"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        {actionSuccess && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs rounded-lg flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{actionSuccess}</span>
+          </div>
+        )}
+
+        {/* Content Vertical Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <button
+            onClick={() => setContentTypeFilter('ALL')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              contentTypeFilter === 'ALL'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            {tab.label}
+            <span>All Verticals</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-700 text-indigo-300 font-mono">
+              {counts.total}
+            </span>
           </button>
-        ))}
-      </div>
 
-      {/* Review Queue List */}
-      <div className="space-y-4">
+          <button
+            onClick={() => setContentTypeFilter('BOOK')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              contentTypeFilter === 'BOOK'
+                ? 'bg-emerald-700 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Books</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-mono">
+              {counts.books}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setContentTypeFilter('QUESTION')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              contentTypeFilter === 'QUESTION'
+                ? 'bg-indigo-700 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Questions</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 font-mono">
+              {counts.questions}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setContentTypeFilter('YOSHORT')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              contentTypeFilter === 'YOSHORT'
+                ? 'bg-purple-700 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Video className="w-3.5 h-3.5 text-purple-500" />
+            <span>YoShorts</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800 font-mono">
+              {counts.shorts}
+            </span>
+          </button>
+        </div>
+
+        {/* Unified Queue Items */}
         {loading ? (
-          <div className="text-center py-16 text-slate-400">Loading review queue...</div>
-        ) : questions.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-16 text-center text-slate-400 space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-            <h3 className="font-bold text-slate-800 text-sm">Queue is Clean!</h3>
-            <p className="text-xs text-slate-400">
-              No questions waiting in status: {activeFilter.replace(/_/g, ' ')}.
+          <div className="p-12 text-center text-slate-400">Loading unified review items...</div>
+        ) : queue.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+            <h3 className="text-base font-semibold text-slate-800">All caught up!</h3>
+            <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+              No pending content awaiting review in this vertical.
             </p>
           </div>
         ) : (
-          questions.map((q) => {
-            const primaryTax = q.taxonomyMappings?.[0];
-            return (
-              <div
-                key={q.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-indigo-600">{q.code}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">
-                      {q.type}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      {q.difficulty}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      • {primaryTax?.subject?.name || 'General'} / {primaryTax?.chapter?.name || '—'}
-                    </span>
+          <div className="space-y-3">
+            {queue.map((item) => {
+              const typeColor =
+                item.contentType === 'BOOK'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : item.contentType === 'QUESTION'
+                  ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                  : 'bg-purple-50 text-purple-800 border-purple-200';
+
+              const Icon =
+                item.contentType === 'BOOK'
+                  ? BookOpen
+                  : item.contentType === 'QUESTION'
+                  ? Database
+                  : Video;
+
+              return (
+                <div
+                  key={`${item.contentType}-${item.id}`}
+                  className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5">
+                    <div className={`p-2.5 rounded-lg border shrink-0 ${typeColor}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${typeColor}`}>
+                          {item.contentType}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">{item.subtitle}</span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            item.priority === 'HIGH'
+                              ? 'bg-red-50 text-red-700'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {item.priority} PRIORITY
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-slate-900 text-sm leading-snug">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-600 flex items-center gap-2">
+                        <span className="text-slate-400">Required Action:</span>
+                        <strong className="text-slate-800 font-medium">{item.pendingAction}</strong>
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                     <button
-                      onClick={() => handleQuickDecision(q.id, 'APPROVE')}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1 transition-colors"
+                      onClick={() => handleQuickApprove(item)}
+                      className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-semibold transition-colors"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Approve</span>
-                    </button>
-                    <button
-                      onClick={() => handleQuickDecision(q.id, 'REJECT')}
-                      className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 flex items-center gap-1 transition-colors"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                      <span>Reject</span>
+                      Quick Approve
                     </button>
                     <Link
-                      href={`/questions/${q.id}`}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors"
-                      title="Inspect Full Question Details"
+                      href={item.actionUrl}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
                     >
-                      <Eye className="w-4 h-4" />
+                      <span>Open Reviewer</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
-
-                {/* Statement Preview with KaTeX */}
-                <div className="text-xs text-slate-800 leading-relaxed font-normal bg-slate-50/60 p-3.5 rounded-lg border border-slate-100">
-                  <MathRenderer content={q.statementText} />
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                  <span>Source: {q.source?.sourceName || 'Manual Entry'}</span>
-                  <span>Submitted on {new Date(q.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

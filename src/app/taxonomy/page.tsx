@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import AppLayout from '@/components/layout/AppLayout';
 import {
   Network,
   Plus,
@@ -103,7 +105,8 @@ export default function TaxonomyManagementPage() {
   const currentChapter = chapters.find((c: any) => c.id === selectedChapter) || chapters[0];
 
   return (
-    <div className="space-y-6 pb-20">
+    <AppLayout>
+      <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
@@ -319,13 +322,21 @@ export default function TaxonomyManagementPage() {
                           <Folder className="w-3.5 h-3.5 text-indigo-500" />
                           <span>{top.name}</span>
                         </div>
-                        <button
-                          onClick={() => handleDeleteTaxonomy('topic', top.id)}
-                          className="text-slate-400 hover:text-rose-600 p-0.5"
-                          title="Delete topic"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/taxonomy/topics/${top.id}`}
+                            className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors"
+                          >
+                            Content Hub →
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteTaxonomy('topic', top.id)}
+                            className="text-slate-400 hover:text-rose-600 p-0.5"
+                            title="Delete topic"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {top.subtopics && top.subtopics.length > 0 && (
@@ -425,5 +436,6 @@ export default function TaxonomyManagementPage() {
         </div>
       )}
     </div>
+  </AppLayout>
   );
 }

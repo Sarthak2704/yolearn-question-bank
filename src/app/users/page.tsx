@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import {
   Users2,
   ShieldCheck,
@@ -28,18 +29,21 @@ export default function UserRoleManagementPage() {
   }, []);
 
   const permissionMatrix = [
+    { module: 'Physical Book PDF Ingestion', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: true, VIEWER: false },
+    { module: 'Book OCR Review & Chapter Structuring', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: true, CONTENT_MANAGER: true, VIEWER: false },
     { module: 'View Question Repository', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: true, CONTENT_MANAGER: true, VIEWER: true },
     { module: 'Create & Edit Questions', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: false, CONTENT_MANAGER: true, VIEWER: false },
-    { module: 'Bulk Upload (PDF/Excel)', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: true, VIEWER: false },
-    { module: 'SME Answer Verification', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
-    { module: 'Approve & Publish to DPP/Mock', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: true, CONTENT_MANAGER: false, VIEWER: false },
-    { module: 'Taxonomy & Syllabus Config', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
-    { module: 'Duplicate Merge Decisions', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
-    { module: 'User Management & Settings', SUPER_ADMIN: true, QB_MANAGER: false, SME: false, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
+    { module: 'Bulk Document Question Extraction', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: true, VIEWER: false },
+    { module: 'YoShorts Educational Video Creation', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: true, VIEWER: false },
+    { module: 'YoShorts Transcript Verification', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: true, CONTENT_MANAGER: false, VIEWER: false },
+    { module: 'Unified Content Review Queue Approval', SUPER_ADMIN: true, QB_MANAGER: true, SME: true, REVIEWER: true, CONTENT_MANAGER: false, VIEWER: false },
+    { module: 'Taxonomy & Syllabus Mapping Config', SUPER_ADMIN: true, QB_MANAGER: true, SME: false, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
+    { module: 'User Management & Role Permissions', SUPER_ADMIN: true, QB_MANAGER: false, SME: false, REVIEWER: false, CONTENT_MANAGER: false, VIEWER: false },
   ];
 
   return (
-    <div className="space-y-6 pb-20">
+    <AppLayout>
+      <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="pb-4 border-b border-slate-200">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
@@ -171,5 +175,6 @@ export default function UserRoleManagementPage() {
         </div>
       </div>
     </div>
+  </AppLayout>
   );
 }

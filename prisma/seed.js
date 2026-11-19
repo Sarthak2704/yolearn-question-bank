@@ -4,7 +4,15 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding YoLearn Question Bank database...');
 
-  // Reset existing questions to allow idempotent re-seeding
+  // Reset existing records to allow idempotent re-seeding
+  await prisma.yoShortReview.deleteMany();
+  await prisma.yoShortBookMapping.deleteMany();
+  await prisma.yoShort.deleteMany();
+  await prisma.questionBookMapping.deleteMany();
+  await prisma.bookPage.deleteMany();
+  await prisma.bookTopic.deleteMany();
+  await prisma.bookChapter.deleteMany();
+  await prisma.book.deleteMany();
   await prisma.questionReview.deleteMany();
   await prisma.questionVersion.deleteMany();
   await prisma.questionDuplicate.deleteMany();
@@ -291,6 +299,54 @@ async function main() {
         classId: class12.id,
         name: 'Principles of Inheritance and Variation',
         chapterNumber: 5,
+      },
+    });
+  }
+
+  // Chemistry: Class 10 Chemical Reactions & Equations
+  let chapReactions = await prisma.chapter.findFirst({ where: { name: 'Chemical Reactions and Equations' } });
+  if (!chapReactions) {
+    chapReactions = await prisma.chapter.create({
+      data: {
+        subjectId: subChemistry.id,
+        classId: class10.id,
+        name: 'Chemical Reactions and Equations',
+        chapterNumber: 1,
+      },
+    });
+  }
+
+  let topicChemicalReactions = await prisma.topic.findFirst({ where: { name: 'Types of Chemical Reactions', chapterId: chapReactions.id } });
+  if (!topicChemicalReactions) {
+    topicChemicalReactions = await prisma.topic.create({
+      data: {
+        chapterId: chapReactions.id,
+        name: 'Types of Chemical Reactions',
+        sortOrder: 1,
+      },
+    });
+  }
+
+  // Chemistry: Class 12 Chemical Kinetics
+  let chapKinetics = await prisma.chapter.findFirst({ where: { name: 'Chemical Kinetics' } });
+  if (!chapKinetics) {
+    chapKinetics = await prisma.chapter.create({
+      data: {
+        subjectId: subChemistry.id,
+        classId: class12.id,
+        name: 'Chemical Kinetics',
+        chapterNumber: 4,
+      },
+    });
+  }
+
+  let topicKinetics = await prisma.topic.findFirst({ where: { name: 'Order and Molecularity of Reaction', chapterId: chapKinetics.id } });
+  if (!topicKinetics) {
+    topicKinetics = await prisma.topic.create({
+      data: {
+        chapterId: chapKinetics.id,
+        name: 'Order and Molecularity of Reaction',
+        sortOrder: 1,
       },
     });
   }
@@ -1036,7 +1092,425 @@ async function main() {
     },
   });
 
-  // 15. Audit Logs
+  // 15. Books Management & Ingestion (Physical Book PDF Ingestion Pipeline)
+  const bookScience10 = await prisma.book.create({
+    data: {
+      code: 'jesc1',
+      title: 'Science Class 10 (NCERT)',
+      subtitle: 'Textbook in Science for Class X',
+      curriculum: 'CBSE',
+      grade: 10,
+      subjectId: subChemistry.id,
+      publisher: 'NCERT',
+      academicYear: '2024-2025',
+      edition: 'Reprint 2024',
+      language: 'English',
+      bookType: 'TEXTBOOK',
+      isbn: '978-81-7450-492-0',
+      coverUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=300',
+      pdfUrl: 'https://storage.yolearn.ai/books/cbse/grade10/science/jesc1.pdf',
+      s3Path: 'CBSE/Grade 10/Science/1',
+      qdrantCollection: 'yolearn_cbse_10_science',
+      databaseTarget: 'primary',
+      chapterSplit: '1-16,17-38,39-55',
+      rawChapterNames: 'Chemical Reactions and Equations, Acids Bases and Salts, Metals and Non-metals',
+      status: 'PUBLISHED',
+      verificationLevel: 'TOPIC',
+      processingProgress: 100,
+      currentStage: 'PUBLISHED',
+      totalPages: 55,
+      totalChapters: 3,
+      totalTopics: 6,
+    },
+  });
+
+  const bookChapReactions = await prisma.bookChapter.create({
+    data: {
+      bookId: bookScience10.id,
+      chapterNumber: 1,
+      title: 'Chemical Reactions and Equations',
+      pageStart: 1,
+      pageEnd: 16,
+      introduction: 'Consider the following situations of daily life: milk left at room temperature during summers, an iron tawa exposed to humid atmosphere, grapes getting fermented. In all these cases, the nature and identity of the initial substance have changed.',
+      status: 'VERIFIED',
+      extractionConfidence: 0.98,
+      verifiedBy: 'Dr. Priya Sharma (SME Chemistry)',
+      verifiedAt: new Date(),
+    },
+  });
+
+  const bookTopicTypes = await prisma.bookTopic.create({
+    data: {
+      chapterId: bookChapReactions.id,
+      title: 'Types of Chemical Reactions',
+      sortOrder: 2,
+      pageReference: 6,
+      centralTopicId: topicChemicalReactions.id,
+      status: 'VERIFIED',
+      extractionConfidence: 0.97,
+      contentBlocksJson: JSON.stringify([
+        {
+          id: 'blk-001',
+          type: 'TEXT',
+          content: 'We have learnt in Class IX that during a chemical reaction atoms of one element do not change into those of another element. Chemical reactions involve the breaking and making of bonds between atoms to produce new substances.',
+          confidence: 0.99,
+          page: 6,
+          isVerified: true,
+        },
+        {
+          id: 'blk-002',
+          type: 'FORMULA',
+          content: '2H_2(g) + O_2(g) \\rightarrow 2H_2O(l) \\quad [\\Delta H < 0]',
+          confidence: 0.98,
+          page: 7,
+          isVerified: true,
+        },
+        {
+          id: 'blk-003',
+          type: 'IMAGE',
+          content: 'Formation of slaked lime by the reaction of calcium oxide with water: CaO(s) + H2O(l) -> Ca(OH)2(aq) + Heat',
+          confidence: 0.95,
+          page: 7,
+          isVerified: true,
+        },
+      ]),
+    },
+  });
+
+  await prisma.bookPage.create({
+    data: {
+      chapterId: bookChapReactions.id,
+      pageNumber: 6,
+      rawText: 'Activity 1.4: Take a small amount of calcium oxide or quick lime in a beaker. Slowly add water to this. Touch the beaker as shown in Fig. 1.3.',
+      extractedJson: JSON.stringify({
+        activityNumber: 'Activity 1.4',
+        chemicals: ['Calcium Oxide (CaO)', 'Water (H2O)', 'Calcium Hydroxide (Ca(OH)2)'],
+        reactionType: 'Exothermic Combination Reaction',
+      }),
+      imageUrl: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=600',
+      confidence: 0.96,
+      isVerified: true,
+      ocrStatus: 'COMPLETED',
+    },
+  });
+
+  // Book 2: Physics Class 11 Part 1
+  const bookPhysics11 = await prisma.book.create({
+    data: {
+      code: 'keph1',
+      title: 'Physics Class 11 Part 1 (NCERT)',
+      subtitle: 'Textbook for Class XI',
+      curriculum: 'CBSE',
+      grade: 11,
+      subjectId: subPhysics.id,
+      publisher: 'NCERT',
+      academicYear: '2024-2025',
+      edition: 'Revised Edition 2024',
+      language: 'English',
+      bookType: 'TEXTBOOK',
+      isbn: '978-81-7450-506-4',
+      coverUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=300',
+      pdfUrl: 'https://storage.yolearn.ai/books/cbse/grade11/physics/keph1.pdf',
+      s3Path: 'CBSE/Grade 11/Physics/1',
+      qdrantCollection: 'yolearn_cbse_11_physics',
+      databaseTarget: 'primary',
+      chapterSplit: '1-30,31-70,71-120,121-165,166-210',
+      rawChapterNames: 'Units and Measurements, Motion in a Straight Line, Motion in a Plane, Laws of Motion, Rotational Motion',
+      status: 'VERIFIED',
+      verificationLevel: 'PAGE',
+      processingProgress: 100,
+      currentStage: 'HUMAN_VERIFIED',
+      totalPages: 210,
+      totalChapters: 5,
+      totalTopics: 18,
+    },
+  });
+
+  const bookChapRotation = await prisma.bookChapter.create({
+    data: {
+      bookId: bookPhysics11.id,
+      chapterNumber: 7,
+      title: 'Systems of Particles and Rotational Motion',
+      pageStart: 137,
+      pageEnd: 178,
+      introduction: 'We have so far dealt with the motion of extended bodies treated as a point mass. We now explore rotation of a rigid body about a fixed axis and planar rotational mechanics.',
+      status: 'VERIFIED',
+      extractionConfidence: 0.99,
+      verifiedBy: 'Dr. Rajesh Verma (Physics SME)',
+      verifiedAt: new Date(),
+    },
+  });
+
+  const bookTopicInertia = await prisma.bookTopic.create({
+    data: {
+      chapterId: bookChapRotation.id,
+      title: 'Moment of Inertia and Theorems of Parallel & Perpendicular Axes',
+      sortOrder: 6,
+      pageReference: 154,
+      centralTopicId: topicInertia.id,
+      status: 'VERIFIED',
+      extractionConfidence: 0.98,
+      contentBlocksJson: JSON.stringify([
+        {
+          id: 'blk-rot-01',
+          type: 'FORMULA',
+          content: 'I = \\sum_{i=1}^n m_i r_i^2 \\quad \\text{and} \\quad I = I_{cm} + M d^2',
+          confidence: 0.99,
+          page: 154,
+          isVerified: true,
+        },
+        {
+          id: 'blk-rot-02',
+          type: 'TEXT',
+          content: 'Moment of inertia depends upon mass of the body, its shape and size, distribution of mass about the axis of rotation, and the position and orientation of the axis of rotation.',
+          confidence: 0.98,
+          page: 155,
+          isVerified: true,
+        },
+      ]),
+    },
+  });
+
+  await prisma.bookPage.create({
+    data: {
+      chapterId: bookChapRotation.id,
+      pageNumber: 154,
+      rawText: 'Section 7.10: Moment of Inertia. We have already mentioned that for rotational motion, the moment of inertia plays the same role as mass does in linear motion.',
+      extractedJson: JSON.stringify({
+        section: '7.10',
+        title: 'Moment of Inertia',
+        equations: ['I = \\int r^2 dm', 'I_{rod} = \\frac{1}{12} M L^2'],
+      }),
+      imageUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600',
+      confidence: 0.98,
+      isVerified: true,
+      ocrStatus: 'COMPLETED',
+    },
+  });
+
+  // Book 3: Chemistry Class 12 Part 1
+  const bookChemistry12 = await prisma.book.create({
+    data: {
+      code: 'lech1',
+      title: 'Chemistry Class 12 Part 1 (NCERT)',
+      subtitle: 'Textbook in Chemistry for Class XII',
+      curriculum: 'CBSE',
+      grade: 12,
+      subjectId: subChemistry.id,
+      publisher: 'NCERT',
+      academicYear: '2024-2025',
+      edition: 'Latest Edition 2024',
+      language: 'English',
+      bookType: 'TEXTBOOK',
+      isbn: '978-81-7450-648-1',
+      coverUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=300',
+      pdfUrl: 'https://storage.yolearn.ai/books/cbse/grade12/chemistry/lech1.pdf',
+      s3Path: 'CBSE/Grade 12/Chemistry/1',
+      qdrantCollection: 'yolearn_cbse_12_chemistry',
+      databaseTarget: 'primary',
+      chapterSplit: '1-35,36-65,66-98',
+      rawChapterNames: 'Solutions, Electrochemistry, Chemical Kinetics',
+      status: 'EXTRACTION_COMPLETED',
+      verificationLevel: 'CHAPTER',
+      processingProgress: 88,
+      currentStage: 'HUMAN_VERIFICATION_PENDING',
+      totalPages: 98,
+      totalChapters: 3,
+      totalTopics: 12,
+    },
+  });
+
+  const bookChapKinetics = await prisma.bookChapter.create({
+    data: {
+      bookId: bookChemistry12.id,
+      chapterNumber: 3,
+      title: 'Chemical Kinetics',
+      pageStart: 66,
+      pageEnd: 98,
+      introduction: 'Chemical kinetics is the branch of chemistry which deals with the study of reaction rates and their mechanisms.',
+      status: 'PENDING_REVIEW',
+      extractionConfidence: 0.94,
+    },
+  });
+
+  const bookTopicRateLaw = await prisma.bookTopic.create({
+    data: {
+      chapterId: bookChapKinetics.id,
+      title: 'Order and Molecularity of a Reaction',
+      sortOrder: 2,
+      pageReference: 72,
+      centralTopicId: topicKinetics.id,
+      status: 'PENDING_REVIEW',
+      extractionConfidence: 0.95,
+      contentBlocksJson: JSON.stringify([
+        {
+          id: 'blk-kin-01',
+          type: 'FORMULA',
+          content: '\\text{Rate} = k [A]^x [B]^y, \\quad \\text{Overall Order} = x + y',
+          confidence: 0.98,
+          page: 72,
+          isVerified: false,
+        },
+      ]),
+    },
+  });
+
+  // 16. Question-to-Book Mappings (Unified Cross-Vertical Mapping)
+  await prisma.questionBookMapping.create({
+    data: {
+      questionId: q1.id, // Moment of Inertia thin rod
+      bookId: bookPhysics11.id,
+      chapterId: bookChapRotation.id,
+      bookTopicId: bookTopicInertia.id,
+      pageNumber: 154,
+      isVerified: true,
+    },
+  });
+
+  await prisma.questionBookMapping.create({
+    data: {
+      questionId: q8.id, // Uniform thin rod collision angular speed
+      bookId: bookPhysics11.id,
+      chapterId: bookChapRotation.id,
+      bookTopicId: bookTopicInertia.id,
+      pageNumber: 156,
+      isVerified: true,
+    },
+  });
+
+  await prisma.questionBookMapping.create({
+    data: {
+      questionId: q12.id, // Chemical Kinetics rate law table experiment
+      bookId: bookChemistry12.id,
+      chapterId: bookChapKinetics.id,
+      bookTopicId: bookTopicRateLaw.id,
+      pageNumber: 72,
+      isVerified: true,
+    },
+  });
+
+  // 17. YoShorts Video Management
+  const shortReactions = await prisma.yoShort.create({
+    data: {
+      code: 'YS-CHM-001',
+      title: '5 Types of Chemical Reactions Explained in 60s',
+      description: 'Master Combination, Decomposition, Displacement, Double Displacement, and Redox reactions with everyday examples.',
+      transcript: 'Did you know that every chemical change in our universe can be classified into five fundamental types? First: Combination reaction, where two substances combine into one, like 2H2 + O2 -> 2H2O. Second: Decomposition reaction, where one compound breaks down with heat, light or electricity. Third: Displacement reaction, where a more reactive metal kicks out a less reactive one. Fourth: Double displacement, where partners swap ions forming a precipitate. And fifth: Redox, where oxidation and reduction happen hand in hand! Remember: Combination builds up, decomposition tears down!',
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=400',
+      durationSeconds: 58,
+      language: 'English',
+      curriculum: 'CBSE',
+      grade: 10,
+      subjectId: subChemistry.id,
+      centralTopicId: topicChemicalReactions.id,
+      generationStatus: 'GENERATED',
+      generationStage: 'READY',
+      verificationStatus: 'APPROVED',
+      publishingStatus: 'PUBLISHED',
+      source: 'YoLearn High-Impact Series',
+    },
+  });
+
+  await prisma.yoShortBookMapping.create({
+    data: {
+      yoShortId: shortReactions.id,
+      bookId: bookScience10.id,
+      chapterId: bookChapReactions.id,
+    },
+  });
+
+  const shortInertia = await prisma.yoShort.create({
+    data: {
+      code: 'YS-PHY-001',
+      title: 'Moment of Inertia Trick for Rotational Dynamics',
+      description: 'Master the Parallel Axis Theorem and rod formulas in 60 seconds with this visual guide.',
+      transcript: 'Struggling with rotational motion problems? Here is the ultimate 60-second shortcut! Remember: Moment of Inertia I = sum m_i r_i^2 is simply the rotational analog of mass. For any symmetrical body pivoted at an eccentric axis, use the Parallel Axis Theorem: I = I_cm + M d^2. Notice how d is the perpendicular distance between the center of mass axis and the rotation axis! For a thin rod pivoted at its end, I = 1/12 M L^2 + M (L/2)^2 = 1/3 M L^2! One simple formula saves 3 minutes on JEE Advanced day!',
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400',
+      durationSeconds: 62,
+      language: 'English',
+      curriculum: 'CBSE',
+      grade: 11,
+      subjectId: subPhysics.id,
+      centralTopicId: topicInertia.id,
+      generationStatus: 'GENERATED',
+      generationStage: 'READY',
+      verificationStatus: 'APPROVED',
+      publishingStatus: 'PUBLISHED',
+      source: 'YoLearn Physics Sprint',
+    },
+  });
+
+  await prisma.yoShortBookMapping.create({
+    data: {
+      yoShortId: shortInertia.id,
+      bookId: bookPhysics11.id,
+      chapterId: bookChapRotation.id,
+    },
+  });
+
+  const shortKinetics = await prisma.yoShort.create({
+    data: {
+      code: 'YS-CHM-002',
+      title: 'Order of Reaction and Rate Law: Quick Revision',
+      description: 'Deduce order of reaction from initial rate data tables in 30 seconds.',
+      transcript: 'How do you find the order of a chemical reaction from experimental data? Look at this table: when reactant A doubles while B is constant, what happens to the rate? If rate doubles, order with respect to A is 1! If rate quadruples, 2^m = 4, so order is 2! If rate is unchanged, order is zero! Sum of individual orders gives the overall reaction order. Units of rate constant k: (mol/L)^(1-n) s^-1. Never memorize, always deduce!',
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400',
+      durationSeconds: 65,
+      language: 'English',
+      curriculum: 'CBSE',
+      grade: 12,
+      subjectId: subChemistry.id,
+      centralTopicId: topicKinetics.id,
+      generationStatus: 'GENERATED',
+      generationStage: 'READY',
+      verificationStatus: 'PENDING_REVIEW',
+      publishingStatus: 'UNPUBLISHED',
+      source: 'YoLearn Board Booster',
+    },
+  });
+
+  await prisma.yoShortBookMapping.create({
+    data: {
+      yoShortId: shortKinetics.id,
+      bookId: bookChemistry12.id,
+      chapterId: bookChapKinetics.id,
+    },
+  });
+
+  const shortBalancing = await prisma.yoShort.create({
+    data: {
+      code: 'YS-CHM-003',
+      title: 'Algebraic Method for Balancing Chemical Equations',
+      description: 'A 100% foolproof technique to balance tough chemical equations without guessing.',
+      transcript: 'Never guess balancing by trial and error again! Use the algebraic method. Put coefficients a, b, c, d in front of reactants and products. Set up linear equations for each element: carbon, hydrogen, oxygen. Set a = 1, solve the system, and multiply by LCM to clear fractions! It works on combustion, redox, and complex coordination reactions every single time.',
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400',
+      durationSeconds: 54,
+      language: 'English',
+      curriculum: 'CBSE',
+      grade: 10,
+      subjectId: subChemistry.id,
+      centralTopicId: topicChemicalReactions.id,
+      generationStatus: 'GENERATED',
+      generationStage: 'READY',
+      verificationStatus: 'CHANGES_REQUESTED',
+      publishingStatus: 'UNPUBLISHED',
+      source: 'YoLearn Foundation Series',
+    },
+  });
+
+  await prisma.yoShortBookMapping.create({
+    data: {
+      yoShortId: shortBalancing.id,
+      bookId: bookScience10.id,
+      chapterId: bookChapReactions.id,
+    },
+  });
+
+  // 18. Audit Logs
   await prisma.auditLog.create({
     data: {
       userId: superAdmin.id,

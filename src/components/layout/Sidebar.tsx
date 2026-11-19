@@ -5,22 +5,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
+  BookOpen,
   Database,
-  UploadCloud,
-  PlusCircle,
-  Sparkles,
-  Cpu,
-  Network,
-  ListFilter,
-  CopyCheck,
+  Video,
   CheckSquare,
-  Folders,
+  Network,
   BarChart3,
-  Users2,
   Settings,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  PlusCircle,
+  UploadCloud,
+  CopyCheck,
+  Folders,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,37 +26,62 @@ interface SidebarProps {
   duplicateCount?: number;
 }
 
-export default function Sidebar({ pendingCount = 1, duplicateCount = 1 }: SidebarProps) {
+export default function Sidebar({ pendingCount = 3, duplicateCount = 1 }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const navigationItems = [
+  // Unified 8-item primary navigation as defined in Master Prompt Section 2
+  const primaryNavigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Question Repository', href: '/questions', icon: Database },
-    { name: 'Upload Questions', href: '/upload', icon: UploadCloud },
-    { name: 'Create Question', href: '/questions/create', icon: PlusCircle },
-    { name: 'AI Question Generator', href: '/ai-generator', icon: Sparkles },
-    { name: 'AI Extraction Jobs', href: '/upload#jobs', icon: Cpu },
-    { name: 'Taxonomy Management', href: '/taxonomy', icon: Network },
-    { name: 'Question Types', href: '/question-types', icon: ListFilter },
     {
-      name: 'Duplicate Management',
-      href: '/duplicates',
-      icon: CopyCheck,
-      badge: duplicateCount > 0 ? duplicateCount : undefined,
-      badgeColor: 'bg-amber-100 text-amber-800',
+      name: 'Books',
+      href: '/books',
+      icon: BookOpen,
+      badge: 'PDF OCR',
+      badgeColor: 'bg-emerald-100 text-emerald-800',
     },
     {
-      name: 'Review & Approval',
+      name: 'Question Bank',
+      href: '/questions',
+      icon: Database,
+    },
+    {
+      name: 'YoShorts',
+      href: '/shorts',
+      icon: Video,
+      badge: 'Video AI',
+      badgeColor: 'bg-purple-100 text-purple-800',
+    },
+    {
+      name: 'Content Review Queue',
       href: '/review',
       icon: CheckSquare,
       badge: pendingCount > 0 ? pendingCount : undefined,
       badgeColor: 'bg-indigo-100 text-indigo-700',
     },
-    { name: 'Question Collections', href: '/groups', icon: Folders },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'User & Role Management', href: '/users', icon: Users2 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    {
+      name: 'Taxonomy Management',
+      href: '/taxonomy',
+      icon: Network,
+    },
+    {
+      name: 'Reports & Analytics',
+      href: '/analytics',
+      icon: BarChart3,
+    },
+    {
+      name: 'Settings',
+      href: '/settings',
+      icon: Settings,
+    },
+  ];
+
+  // Quick action shortcuts under Question Bank for fast operational access
+  const qbSubItems = [
+    { name: 'Create Question', href: '/questions/create', icon: PlusCircle },
+    { name: 'Bulk Import', href: '/upload', icon: UploadCloud },
+    { name: 'Duplicates', href: '/duplicates', icon: CopyCheck, count: duplicateCount },
+    { name: 'Collections', href: '/groups', icon: Folders },
   ];
 
   return (
@@ -78,7 +101,7 @@ export default function Sidebar({ pendingCount = 1, duplicateCount = 1 }: Sideba
               <span className="font-semibold text-slate-900 text-base leading-tight tracking-tight">
                 YoLearn<span className="text-indigo-600">.ai</span>
               </span>
-              <span className="text-[11px] text-slate-500 font-medium">Question Bank OS</span>
+              <span className="text-[11px] text-slate-500 font-medium">Unified Content CMS</span>
             </div>
           )}
         </div>
@@ -93,52 +116,90 @@ export default function Sidebar({ pendingCount = 1, duplicateCount = 1 }: Sideba
 
       {/* Navigation List */}
       <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-        {navigationItems.map((item) => {
+        {primaryNavigation.map((item) => {
           const Icon = item.icon;
           const isActive =
-            pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+            pathname === item.href ||
+            (item.href !== '/' && pathname?.startsWith(item.href));
 
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group relative ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
                 isActive
-                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
               title={collapsed ? item.name : undefined}
             >
               <Icon
-                className={`w-4 h-4 shrink-0 transition-colors ${
+                className={`w-5 h-5 shrink-0 transition-colors ${
                   isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
                 }`}
               />
-              {!collapsed && <span className="truncate flex-1">{item.name}</span>}
-              {!collapsed && item.badge !== undefined && (
-                <span
-                  className={`px-1.5 py-0.5 text-[11px] font-bold rounded-full ${item.badgeColor || 'bg-slate-100 text-slate-700'}`}
-                >
-                  {item.badge}
-                </span>
+              {!collapsed && (
+                <div className="flex items-center justify-between flex-1 truncate">
+                  <span className="truncate">{item.name}</span>
+                  {item.badge && (
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        item.badgeColor || 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
               )}
             </Link>
           );
         })}
+
+        {/* Question Bank Quick Actions */}
+        {!collapsed && pathname?.startsWith('/questions') && (
+          <div className="pt-3 pb-1 border-t border-slate-100 mt-2 space-y-1">
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 px-3">
+              QB Shortcuts
+            </span>
+            {qbSubItems.map((sub) => {
+              const SubIcon = sub.icon;
+              const isSubActive = pathname === sub.href;
+              return (
+                <Link
+                  key={sub.name}
+                  href={sub.href}
+                  className={`flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    isSubActive
+                      ? 'bg-indigo-100/60 text-indigo-800'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <SubIcon className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{sub.name}</span>
+                  </div>
+                  {sub.count && sub.count > 0 && (
+                    <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-semibold text-[10px]">
+                      {sub.count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* System Status Footer */}
       {!collapsed && (
-        <div className="p-3 border-t border-slate-200 bg-slate-50/60 m-2 rounded-lg text-xs text-slate-500">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-medium text-slate-700">Environment</span>
-            <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Connected
-            </span>
-          </div>
-          <div className="text-[11px] text-slate-500 truncate">
-            Engine: PostgreSQL/SQLite + KaTeX
+        <div className="p-3 border-t border-slate-200 bg-slate-50/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-xs font-medium text-slate-600">3 Verticals Synced</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">v2.0-unified</span>
           </div>
         </div>
       )}
